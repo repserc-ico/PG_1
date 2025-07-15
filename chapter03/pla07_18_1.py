@@ -99,6 +99,8 @@ for i in range(1,11):
     print(f"人間:{human_finger}、コンピュータ:{com_finger}")	#デバッグ用
 
 print("余った指の本数をポイントから差し引きます")
+human_score=human_score-human_finger
+com_score=com_score-com_finger
 print(f"あなたのポイント={human_score}点")
 print(f"コンピュータのポイント={com_score}点")
 if human_score==com_score:
