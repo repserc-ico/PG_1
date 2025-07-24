@@ -2,7 +2,7 @@ import random
 
 #グローバル変数
 g_brd=[0]*30	#ゲームボード	#何の効果もないマス=ゼロで埋める
-g_progress=[0,None,False] #進行管理：[ターン,(未使用),ゴールフラグ]
+g_progress=[0,False,False] #進行管理：[ターン,追越フラグ,ゴールフラグ]
 #各関数
 def init():
     global g_brd
@@ -32,7 +32,6 @@ def init():
     return
 
 def disp(human, computer):
-    #print(f"{g_brd}")
     pos=["　"]*30
     if human[0]==computer[0]:
         pos[human[0]]="＃"
@@ -62,23 +61,41 @@ def disp(human, computer):
 
 def game(player):
     global g_progress
+    key=""
     if player[2]==True:
         print(f"{member[g_progress[0]]}の番はお休みです")
         g_progress[0]=abs(g_progress[0]-1)	#ターン切り替え
         player[2]=False
         return player
     while True:
+        #print(f"{player} {g_progress}")
         print(f"{member[g_progress[0]]}の番です")
-        key=input("エンターキーを押してください(eでギブアップ)")
+        key=input("エンターキーを押してください(eで途中終了)")
         if key=="e":
             print("ゲームを途中終了します")
             g_progress[2]=True
             return player
         else:
             break
-    dice=random.randint(1,6)
+    if g_progress[0]==0 and key=="1":
+        if player[1]>0:
+            print(f"{member[g_progress[0]]}は食事をしました")
+            player[3]=6	#スタミナ回復
+            player[1]-=1
+        else:
+            print("金貨が足りません(><)")
+    if g_progress[0]==1 and g_progress[1]==True:
+        if player[1]>0:
+            print("comは食事をしました")
+            player[3]=6	#スタミナ回復
+            player[1]-=1
+        else:
+            print("(com)ぐぬぬ…金貨が足りない(-_-ﾒ)")
+    dice=random.randint(1,player[3])
     print(f"サイコロの目は{dice}です")
     player[0]+=dice
+    if player[3]>1:	#スタミナ消費
+        player[3]-=1
     #ゴールオーバーチェック
     if player[0]>29:
         print(f"余った分の{player[0]-29}マス戻ります")
@@ -108,22 +125,28 @@ def gold(player, getloss):	#金貨の増減
         if player[1]>0:
             print(f"{member[g_progress[0]]}は金貨を{r}枚なくしました。")
             player[1]-=r
+            if player[1]<0:
+               player[1]=0
         else:
             print("なくす金貨もありません(ToT)")
     return player
 
 def moving(player, steploss):	#追加移動
     r=random.randint(1,3)
+    if player[3]>1:	#スタミナ消費
+        player[3]-=1
     if steploss==3:
         print(f"{member[g_progress[0]]}はさらに{r}マス進みます！")
         player[0]+=r
-        if g_brd[player[0]]==7:	#ゴールチェック
-            goal()
+        if g_brd[player[0]]==7:	#ちょうどぴったりならゴール
+            goal()   
         #ゴールオーバーチェック
         if player[0]>29:
             print(f"{member[g_progress[0]]}は余った分の{player[0]-29}マス戻ります")
             player[0]=29-(player[0]-29)
     else:
+        if player[3]>1:	#スタミナ消費
+            player[3]-=1
         print(f"{member[g_progress[0]]}は{r}マス戻ります…")
         player[0]-=r
         #振り出しチェック
@@ -135,6 +158,9 @@ def moving(player, steploss):	#追加移動
 def rest(player):	#一回休み
     print(f"{member[g_progress[0]]}は1回休みです。")
     player[2]=True
+    player[3]+=3	#スタミナ半分回復
+    if player[3]>6:
+        player[3]=6
     return player
 
 def restart(player):	#ふりだしに戻る
@@ -151,8 +177,8 @@ def goal():	#ゴール判定
 #メインの部分
 #初期化
 member=["あなた","com"]
-you=[0,5,False]	#人間側プレイヤー：[ボードの位置,所持してる金貨,一回休みフラグ]
-com=[0,5,False]	#comプレイヤー   ：[ボードの位置,所持してる金貨,一回休みフラグ]
+you=[0,10,False,6]	#人間側プレイヤー：[ボードの位置,所持してる金貨,一回休みフラグ,スタミナ]
+com=[0,10,False,6]	#comプレイヤー   ：[ボードの位置,所持してる金貨,一回休みフラグ,スタミナ]
 init()
 print("\n=== すごろく ===")
 g_progress[0]=random.randint(0,1)
@@ -161,7 +187,7 @@ print(f"{member[g_progress[0]]}が先攻です")
 turn=1
 while True:
     print(f"\n--- Turn:{turn} ---",end="")
-    print(f"　金貨：あなた(＠)…{you[1]}、com(＊)…{com[1]}")
+    print(f"　金貨：あなた(＠)…{you[1]}、com(＊)…{com[1]}　スタミナ：あなた…{you[3]}、com…{com[3]}")
     disp(you,com)	#画面表示
     if g_progress[0]==0:
         you=game(you)
@@ -169,15 +195,21 @@ while True:
         com=game(com)
     if g_progress[2]==True:	#ゴールしたらループを抜ける
         break
+    if you[0]>com[0]:	#追い越しフラグ判定
+        g_progress[1]=True
+    else:
+        g_progress[1]=False
     turn+=1
         
 #結果表示
 print("*** 結果発表 ***")
 print("スピード的勝利：",end="")
-if you[0]==com[0]:
-    print("ひきわけ")
+if you[0]<29 and com[0]<29:
+    print("途中終了")
 else:
-    if you[0]>com[0]:
+    if you[0]==com[0]:
+        print("ひきわけ")
+    elif you[0]>com[0]:
         print(member[0])
     else:
         print(member[1])
@@ -186,6 +218,14 @@ if you[1]==com[1]:
     print("ひきわけ")
 else:
     if you[1]>com[1]:
+        print(member[0])
+    else:
+        print(member[1])
+print("スタミナ的勝利：",end="")
+if you[3]==com[3]:
+    print("ひきわけ")
+else:
+    if you[3]>com[3]:
         print(member[0])
     else:
         print(member[1])
