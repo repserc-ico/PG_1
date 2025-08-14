@@ -72,11 +72,18 @@ class Game:
             print(f"{self.dice[0]}と{self.dice[1]}の目が出ました。")
             self.is_turned=False
             self.reserve=sum(self.dice)
-            #check=0
-            #for i in range(0,self.reserve):
-            #    check+=board.flip[i]
-            #if check==self.reserve:
-            #   print("！開けるパネルがありません！")
+            check=0
+            chk_max=self.reserve
+            if chk_max>9:
+                chk_max=9
+            for i in range(0,chk_max):
+                check+=board.flip[i]
+            if check==chk_max:
+                board.show()
+                print("開けるパネルがありません！")
+                print("残念ですが、ここでゲームオーバーです！")
+                self.out=True
+                break
             if self.dice[0]==self.dice[1]:
                 print("ゾロ目が出ました。ポイント２倍！")
                 self.is_double=True
